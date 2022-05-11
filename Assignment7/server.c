@@ -13,8 +13,8 @@ void error_handling(char *message);
 int main(int argc, char *argv[]){
     int serv_sock;
     int clnt_sock;
-    FILE* readFP;
-    FILE* writeFP;
+    FILE* readFP[100];
+    FILE* writeFP[100];
     
     struct sockaddr_in serv_addr;
     struct sockaddr_in clnt_addr;
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]){
 
     struct timeval timeout;
     fd_set reads, cpy_reads;
-    int fd_max, str_len, fd_num, i;
+    int fd_max, fd_num, i;
 
     if(argc!=2){
         printf("Usage : %s <port>\n", argv[0]);
@@ -47,6 +47,7 @@ int main(int argc, char *argv[]){
     FD_ZERO(&reads);
     FD_SET(serv_sock, &reads);
     fd_max = serv_sock;
+
     while(1){
         cpy_reads = reads;
         timeout.tv_sec = 5;
@@ -61,46 +62,34 @@ int main(int argc, char *argv[]){
                     clnt_adr_sz = sizeof(clnt_addr);
                     clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_adr_sz);
                     if(clnt_sock==-1)
-                        error_handling("accept()");
+                        error_handling("accept() error!");
 
                     FD_SET(clnt_sock, &reads);
                     if(fd_max<clnt_sock)
                         fd_max = clnt_sock;
                     printf("Connected client : %d\n",clnt_sock);
+
+                    readFP[clnt_sock] = fdopen(clnt_sock,"r");
+                    writeFP[clnt_sock] = fdopen(dup(clnt_sock),"w");
                 }
                 else{
-                    str_len = read(i, buf, BUF_SIZE);
-                    if(str_len==0){
+                    if(fgets(buf, BUF_SIZE, readFP[i])==NULL){
                         FD_CLR(i, &reads);
-                        close(i);
-                        printf("closed client: %d\n",i);
+                        shutdown(fileno(writeFP[i]), SHUT_WR);    
+                        fclose(writeFP[i]);
+                        fclose(readFP[i]);
+                        close(i);   
                     }
                     else{
-                        write(i, buf, str_len);
-                    }
+                        fputs(buf, writeFP[i]);
+                        fflush(writeFP[i]);
+                    }   
                 }
             }
         }
     }
 
     close(serv_sock);
-    return 0;
-    
-    
-
-    readFP = fdopen(clnt_sock,"r");
-    writeFP = fdopen(dup(clnt_sock),"w");
-
-    
-    fputs("FROM SUERVER: HI~ client? \n", writeFP);
-    fputs("I love all of the world \n", writeFP);
-    fputs("You are awesome! \n", writeFP);
-    fflush(writeFP);
-    shutdown(fileno(writeFP), SHUT_WR);    
-    fclose(writeFP);
-    fgets(buf, sizeof(buf), readFP);
-    fputs(buf, stdout);
-    fclose(readFP);
     return 0;
 }
 
