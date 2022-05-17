@@ -15,6 +15,10 @@ int main(int argc, char *argv[]){
     int clnt_sock;
     FILE* readFP[100];
     FILE* writeFP[100];
+    int admin[100];
+    int activate[100];
+    int act_size=0;
+    int t;
     
     struct sockaddr_in serv_addr;
     struct sockaddr_in clnt_addr;
@@ -67,23 +71,68 @@ int main(int argc, char *argv[]){
                     FD_SET(clnt_sock, &reads);
                     if(fd_max<clnt_sock)
                         fd_max = clnt_sock;
-                    printf("Connected client : %d\n",clnt_sock);
 
-                    readFP[clnt_sock] = fdopen(clnt_sock,"r");
-                    writeFP[clnt_sock] = fdopen(dup(clnt_sock),"w");
+                    activate[act_size++]=clnt_sock;
+
+                    writeFP[clnt_sock] = fdopen(clnt_sock,"w");
+                    readFP[clnt_sock] = fdopen(dup(clnt_sock),"r");
+                    
+                    fgets(buf, BUF_SIZE, readFP[clnt_sock]);
+                    if (!strcmp(buf,"admin\n")) {
+                        printf("Admin %d has entered..\n",clnt_sock);
+                        admin[clnt_sock]=1;
+                        fputs("accept\n", writeFP[clnt_sock]);
+                        fflush(writeFP[clnt_sock]);
+                    }
+                    else if (!strcmp(buf,"user\n")) {
+                        printf("User %d has entered..\n",clnt_sock);
+                        admin[clnt_sock]=0;
+
+                        fputs("deny\n", writeFP[clnt_sock]);
+                        fflush(writeFP[clnt_sock]);
+
+                        shutdown(fileno(readFP[clnt_sock]), SHUT_WR);
+                        fclose(readFP[clnt_sock]);
+                    }
+                    else{
+                        printf("Wrong input!!\n");
+                        fputs("wrong input", writeFP[clnt_sock]);
+                        fflush(writeFP[clnt_sock]);
+                    }
                 }
                 else{
                     if(fgets(buf, BUF_SIZE, readFP[i])==NULL){
-                        FD_CLR(i, &reads);
-                        shutdown(fileno(writeFP[i]), SHUT_WR);    
-                        fclose(writeFP[i]);
-                        fclose(readFP[i]);
-                        close(i);   
+                        // shut down every socket
+                        if(admin[i]){
+                            printf("act_size : %d\n",act_size);
+                            for(int k=0;k<act_size;k++){
+                                t = activate[k];
+                                FD_CLR(t, &reads);
+                                fputs("quit\n", writeFP[t]);
+                                fflush(writeFP[t]);
+                                //if(admin[t]){
+                                    shutdown(fileno(readFP[t]), SHUT_WR);
+                                    fclose(readFP[t]);
+                                //}
+                                fclose(writeFP[t]);
+                                close(t);   
+                            }
+                            act_size=0;
+                            break;
+                        }
                     }
-                    else{
-                        fputs(buf, writeFP[i]);
-                        fflush(writeFP[i]);
-                    }   
+                    // send admin's message to all users
+                    else if (admin[i]){
+                        for(int k=0;k<act_size;k++){
+                            t = activate[k];
+                            fputs(buf, writeFP[t]);
+                            fflush(writeFP[t]);
+                        }
+                    }
+                    else {
+                        printf("Unauthorized Access!!");
+                        break;
+                    }
                 }
             }
         }

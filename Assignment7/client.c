@@ -39,13 +39,41 @@ int main(int argc, char* argv[]){
         writefp = fdopen(sock, "w");
 
         while(1){
-            fputs("Input message(Q to quit): ", stdout);
+            fputs("Select mode(user/admin) : ", stdout);
             fgets(message, BUF_SIZE, stdin);
+            if(!strcmp(message, "user\n") || !strcmp(message, "admin\n"))
+                break;        
+        }
 
-            if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
-                break;
-            fflush(writefp);
-            printf("Message form server : %s", message);
+        fputs(message, writefp);
+        fflush(writefp);    
+        fgets(message, BUF_SIZE, readfp);
+        int admin = strcmp(message, "accept\n");
+        if(admin==0)
+                printf("[Admin mode] Please input message for clients\n");
+        else   
+                printf("[User mode] Please wait for admin's message\n");
+
+        while(1){
+            if (admin==0){
+                fputs("Input message(Q to quit): ", stdout);
+                fgets(message, BUF_SIZE, stdin);
+
+                if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
+                    break;
+
+                fputs(message, writefp);
+                fflush(writefp);
+                fgets(message, BUF_SIZE, readfp);
+                printf("Message form server : %s", message);
+            }
+            else{
+                while(fgets(message, BUF_SIZE, readfp)==NULL){
+                        sleep(1);
+                }
+                if(!strcmp(message, "quit\n")) break;
+                printf("Message form server : %s", message);
+            }
         }
         fclose(readfp);
         fclose(writefp);
