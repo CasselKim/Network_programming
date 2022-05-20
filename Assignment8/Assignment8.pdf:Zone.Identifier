@@ -1,0 +1,3 @@
+[ZoneTransfer]
+ZoneId=3
+HostUrl=https://s3.us-west-2.amazonaws.com/temporary.notion-static.com/Export-aa2c1a7b-59e2-4606-81f7-d31aa30fc8ea/Assignment8.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20220520%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20220520T131042Z&X-Amz-Expires=604800&X-Amz-Signature=3031089cc1f18c69810434048084783b559c8c8128de446c80d1690a0de387d1&X-Amz-SignedHeaders=host&x-id=GetObject
